@@ -1,0 +1,25 @@
+version: "3.9"
+
+services:
+  hyperion-python:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.python
+    ports:
+      - "50051:50051"
+    volumes:
+      - experiments:/app/experiments
+    environment:
+      - JAX_PLATFORM_NAME=cpu
+
+  hyperion-orchestrator:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.java
+    ports:
+      - "50052:50052"
+    depends_on:
+      - hyperion-python
+
+volumes:
+  experiments:

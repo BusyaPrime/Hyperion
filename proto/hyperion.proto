@@ -1,0 +1,256 @@
+syntax = "proto3";
+
+package hyperion;
+
+option java_multiple_files = true;
+option java_package = "hyperion.proto";
+option java_outer_classname = "HyperionProto";
+
+// --- Общие типы ---
+// Тензоры, ключ-значение и прочая мелочь для gRPC
+
+message TensorProto {
+    repeated float data = 1;
+    repeated int32 shape = 2;
+    string dtype = 3;
+}
+
+message KeyValue {
+    string key = 1;
+    string value = 2;
+}
+
+enum InferenceMethod {
+    INFERENCE_METHOD_UNSPECIFIED = 0;
+    HMC = 1;
+    NUTS = 2;
+    SMC = 3;
+    VI = 4;
+    FLOWS = 5;
+    LAPLACE = 6;
+}
+
+enum JobStatus {
+    JOB_STATUS_UNSPECIFIED = 0;
+    PENDING = 1;
+    RUNNING = 2;
+    COMPLETED = 3;
+    FAILED = 4;
+    CANCELLED = 5;
+}
+
+// --- Model Service ---
+// Валидация моделей и экспорт IR
+
+service ModelService {
+    rpc ValidateModel (ValidateModelRequest) returns (ValidateModelResponse);
+    rpc ExportIR (ExportIRRequest) returns (ExportIRResponse);
+}
+
+message ValidateModelRequest {
+    string model_source = 1;
+    map<string, TensorProto> data = 2;
+}
+
+message ValidateModelResponse {
+    bool valid = 1;
+    repeated string errors = 2;
+    repeated string warnings = 3;
+    int32 num_latent_vars = 4;
+    int32 num_observed_vars = 5;
+    repeated string latent_names = 6;
+    repeated string observed_names = 7;
+}
+
+message ExportIRRequest {
+    string model_source = 1;
+    map<string, TensorProto> data = 2;
+    int32 seed = 3;
+}
+
+message ExportIRResponse {
+    string ir_json = 1;
+    int32 num_nodes = 2;
+    repeated string optimization_passes = 3;
+}
+
+// --- Inference Service ---
+// Запуск инференса, стриминг samples, диагностика
+
+service InferenceService {
+    rpc RunInference (RunInferenceRequest) returns (RunInferenceResponse);
+    rpc StreamSamples (RunInferenceRequest) returns (stream SampleBatch);
+    rpc GetDiagnostics (DiagnosticsRequest) returns (DiagnosticsResponse);
+}
+
+message InferenceConfig {
+    InferenceMethod method = 1;
+    int32 num_samples = 2;
+    int32 num_warmup = 3;
+    double step_size = 4;
+    int32 num_leapfrog_steps = 5;
+    int32 max_tree_depth = 6;
+    double target_accept_rate = 7;
+
+    // VI — variational inference
+    int32 num_steps = 10;
+    double learning_rate = 11;
+    string covariance_type = 12;
+
+    // SMC — sequential Monte Carlo
+    int32 num_particles = 20;
+    int32 num_tempering_steps = 21;
+
+    // Flows — нормализующие потоки
+    int32 num_layers = 30;
+    int32 hidden_dim = 31;
+    string flow_type = 32;
+}
+
+message RunInferenceRequest {
+    string model_source = 1;
+    map<string, TensorProto> data = 2;
+    InferenceConfig config = 3;
+    int32 seed = 4;
+    string job_id = 5;
+}
+
+message RunInferenceResponse {
+    string job_id = 1;
+    JobStatus status = 2;
+    map<string, TensorProto> samples = 3;
+    DiagnosticsProto diagnostics = 4;
+    double elapsed_seconds = 5;
+    string error_message = 6;
+}
+
+message SampleBatch {
+    int32 batch_index = 1;
+    map<string, TensorProto> samples = 2;
+    int32 total_samples = 3;
+}
+
+message DiagnosticsRequest {
+    string job_id = 1;
+}
+
+message DiagnosticsResponse {
+    string job_id = 1;
+    DiagnosticsProto diagnostics = 2;
+}
+
+message DiagnosticsProto {
+    double accept_rate = 1;
+    int32 num_divergences = 2;
+    double step_size = 3;
+    map<string, double> ess_per_param = 4;
+    map<string, double> r_hat_per_param = 5;
+    double bfmi = 6;
+    repeated double elbo_history = 7;
+    double log_evidence = 8;
+    string report_markdown = 9;
+}
+
+// --- Experiment Service ---
+// Запуск экспериментов, отчёты, артифакты
+
+service ExperimentService {
+    rpc RunExperiment (RunExperimentRequest) returns (RunExperimentResponse);
+    rpc GetReport (GetReportRequest) returns (GetReportResponse);
+    rpc GetArtifacts (GetArtifactsRequest) returns (GetArtifactsResponse);
+}
+
+message RunExperimentRequest {
+    string model_source = 1;
+    map<string, TensorProto> data = 2;
+    InferenceConfig config = 3;
+    int32 seed = 4;
+    string experiment_name = 5;
+    map<string, string> metadata = 6;
+}
+
+message RunExperimentResponse {
+    string experiment_id = 1;
+    JobStatus status = 2;
+    string output_dir = 3;
+    double elapsed_seconds = 4;
+    string error_message = 5;
+}
+
+message GetReportRequest {
+    string experiment_id = 1;
+}
+
+message GetReportResponse {
+    string experiment_id = 1;
+    string report_markdown = 2;
+    string report_json = 3;
+}
+
+message GetArtifactsRequest {
+    string experiment_id = 1;
+}
+
+message GetArtifactsResponse {
+    string experiment_id = 1;
+    map<string, string> artifact_paths = 2;
+    map<string, bytes> artifact_contents = 3;
+}
+
+// --- Orchestrator Service (Java) ---
+// JobScheduler — планировщик задач с приоритетами, ретраями и вотчдогом
+
+service OrchestratorService {
+    rpc SubmitJob (SubmitJobRequest) returns (SubmitJobResponse);
+    rpc GetJobStatus (GetJobStatusRequest) returns (GetJobStatusResponse);
+    rpc CancelJob (CancelJobRequest) returns (CancelJobResponse);
+    rpc ListJobs (ListJobsRequest) returns (ListJobsResponse);
+}
+
+message SubmitJobRequest {
+    RunInferenceRequest inference_request = 1;
+    int32 priority = 2;
+    int32 max_retries = 3;
+    int64 timeout_seconds = 4;
+    map<string, string> labels = 5;
+}
+
+message SubmitJobResponse {
+    string job_id = 1;
+    JobStatus status = 2;
+    int32 queue_position = 3;
+}
+
+message GetJobStatusRequest {
+    string job_id = 1;
+}
+
+message GetJobStatusResponse {
+    string job_id = 1;
+    JobStatus status = 2;
+    double progress = 3;
+    string error_message = 4;
+    int64 started_at = 5;
+    int64 completed_at = 6;
+    int32 retries = 7;
+}
+
+message CancelJobRequest {
+    string job_id = 1;
+}
+
+message CancelJobResponse {
+    string job_id = 1;
+    bool cancelled = 2;
+}
+
+message ListJobsRequest {
+    JobStatus status_filter = 1;
+    int32 limit = 2;
+    int32 offset = 3;
+}
+
+message ListJobsResponse {
+    repeated GetJobStatusResponse jobs = 1;
+    int32 total_count = 2;
+}

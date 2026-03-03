@@ -1,0 +1,4 @@
+rootProject.name = 'hyperion-java'
+
+include 'orchestrator-service'
+include 'java-sdk'

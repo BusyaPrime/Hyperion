@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# Java
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+.idea/
+*.iml
+
+# IDE
+.vscode/
+.cursor/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Data & experiments
+experiments/
+*.npz
+*.parquet
+*.zarr/
+
+# Proto generated
+*_pb2.py
+*_pb2_grpc.py
+*_pb2.pyi
+
+# Docker
+.docker/
+
+# Env
+.env
+*.env
