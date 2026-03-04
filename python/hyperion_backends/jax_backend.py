@@ -10,6 +10,7 @@ potential_fn и potential_and_grad_fn — чистые JIT-скомпилиро�
 
 from __future__ import annotations
 
+import logging
 from typing import Any, Callable, Optional
 
 import jax
@@ -18,6 +19,8 @@ import jax.numpy as jnp
 from hyperion_backends.base import Backend
 from hyperion_trace.trace import trace_model, Trace
 from hyperion_dsl.transforms import biject_to
+
+logger = logging.getLogger(__name__)
 
 
 class JAXBackend(Backend):
@@ -102,15 +105,15 @@ class JAXBackend(Backend):
             if entry.constraint is not None:
                 try:
                     self._transforms[name] = biject_to(entry.constraint)
-                except (ValueError, TypeError):
-                    pass
+                except (ValueError, TypeError) as e:
+                    logger.debug("biject_to failed for %s (constraint): %s", name, e)
             elif entry.distribution is not None:
                 support = getattr(entry.distribution, "support", None)
                 if support is not None:
                     try:
                         self._transforms[name] = biject_to(support)
-                    except (ValueError, TypeError):
-                        pass
+                    except (ValueError, TypeError) as e:
+                        logger.debug("biject_to failed for %s (support): %s", name, e)
 
         # Compute unconstrained shapes and flat_sizes.
         # Transforms like StickBreaking (K→K-1) and Cholesky (n×n→n(n+1)/2)
@@ -124,7 +127,8 @@ class JAXBackend(Backend):
                     unc_shape = tuple(unconstrained.shape)
                     self._unconstrained_shapes[name] = unc_shape
                     self._flat_sizes[name] = max(1, unconstrained.size)
-                except Exception:
+                except Exception as e:
+                    logger.debug("inverse probe failed for %s: %s", name, e)
                     self._unconstrained_shapes[name] = constrained_shape
                     size = 1
                     for s in constrained_shape:
@@ -192,10 +196,8 @@ class JAXBackend(Backend):
         try:
             dummy = self.flatten_latents(self.sample_prior(rng_key))
             _ = self._jit_potential(dummy)
-        except Exception:
-            # Некоторые модели могут не пережить dummy-значения — не страшно,
-            # JIT скомпилится при первом реальном вызове
-            pass
+        except Exception as e:
+            logger.debug("JIT warmup skipped: %s", e)
 
         # === Phase 4: IR compilation (optional, for optimization/analysis) ===
         try:
@@ -204,7 +206,8 @@ class JAXBackend(Backend):
             self._ir_graph = compiler.compile(
                 model_fn, rng_key=rng_key, substitutions=data,
             )
-        except Exception:
+        except Exception as e:
+            logger.debug("IR compilation skipped: %s", e)
             self._ir_graph = None
 
         # === Phase 5: IR-based potential (alternative path) ===
