@@ -1,5 +1,9 @@
 # HYPERION
 
+[![CI](https://github.com/BusyaPrime/Hyperion/actions/workflows/ci.yml/badge.svg)](https://github.com/BusyaPrime/Hyperion/actions/workflows/ci.yml)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://python.org)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+
 Probabilistic Programming Language на чистом JAX. Полный стек: от DSL до продакшн-ready инференса.
 
 Проект собран так, чтобы один человек мог прогнать байесовский инференс за минуту,
