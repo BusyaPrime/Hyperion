@@ -96,7 +96,22 @@ class Distribution(ABC):
         ...
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}()"
+        import inspect
+        sig = inspect.signature(self.__class__.__init__)
+        params = []
+        for name, p in sig.parameters.items():
+            if name == "self":
+                continue
+            val = getattr(self, name, None)
+            if val is None:
+                continue
+            if hasattr(val, "shape") and val.shape == ():
+                params.append(f"{name}={float(val):.4g}")
+            elif hasattr(val, "shape"):
+                params.append(f"{name}=[{','.join(f'{float(v):.4g}' for v in val.ravel()[:4])}{',...' if val.size > 4 else ''}]")
+            else:
+                params.append(f"{name}={val}")
+        return f"{self.__class__.__name__}({', '.join(params)})"
 
 
 class Normal(Distribution):
