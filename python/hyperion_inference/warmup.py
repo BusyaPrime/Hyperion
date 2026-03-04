@@ -17,11 +17,14 @@ find_reasonable_step_size: бисекция по acceptance rate ~0.5. Реал�
 
 from __future__ import annotations
 
+import logging
 from typing import Callable, NamedTuple
 
 import jax
 import jax.numpy as jnp
 import jax.random as jrandom
+
+logger = logging.getLogger(__name__)
 
 
 class WarmupState(NamedTuple):
@@ -258,7 +261,9 @@ def find_reasonable_step_size(
         cond_fn, body_fn, (step_size, log_alpha, jnp.int32(0))
     )
 
-    return jnp.clip(step_size, 1e-10, 1e2)
+    step_size = jnp.clip(step_size, 1e-10, 1e2)
+    logger.debug("find_reasonable_step_size: eps=%.6f after bisection", float(step_size))
+    return step_size
 
 
 def build_adaptation_schedule(num_warmup: int) -> list[tuple[int, int]]:

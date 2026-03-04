@@ -7,6 +7,7 @@ vmap по партиклам — батчим potential_fn, без Python-цик
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 from typing import Any, Literal, Optional
 
@@ -15,6 +16,8 @@ import jax.numpy as jnp
 import jax.random as jrandom
 
 from hyperion_inference.base import InferenceEngine, InferenceState, InferenceResult
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -360,11 +363,19 @@ class SMCEngine(InferenceEngine):
         config: dict[str, Any],
     ) -> InferenceResult:
         state = self.initialize(backend, rng_key, config)
+        num_particles = config.get("num_particles", 1000)
+        logger.info("SMC started: %d particles, adaptive=%s",
+                     num_particles, config.get("adaptive_tempering", True))
 
         max_steps = config.get("num_tempering_steps", 20) * 2
-        for _ in range(max_steps):
+        for step_i in range(max_steps):
             state = self.step(state)
-            if state.betas[-1] >= 1.0:
+            current_beta = state.betas[-1] if state.betas else 0.0
+            logger.debug("SMC step %d, beta=%.4f, ESS=%.1f",
+                         step_i, float(current_beta),
+                         float(state.ess_history[-1]) if state.ess_history else 0.0)
+            if current_beta >= 1.0:
+                logger.info("SMC reached beta=1.0 at step %d", step_i)
                 break
 
         return InferenceResult(

@@ -6,6 +6,7 @@ RealNVP/MAF — масштаб и сдвиг зависят от части вх
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 from typing import Any, Callable, Optional
 
@@ -15,6 +16,8 @@ import jax.random as jrandom
 import optax
 
 from hyperion_inference.base import InferenceEngine, InferenceState, InferenceResult
+
+logger = logging.getLogger(__name__)
 
 
 # --- Flow layers ---
@@ -361,6 +364,9 @@ class FlowsEngine(InferenceEngine):
         )
         self._opt_state = self._optimizer.init(self._flow.all_params)
 
+        logger.info("Flows started: %d steps, %d layers, dim=%d, type=%s",
+                     cfg.num_steps, cfg.num_layers, dim, cfg.flow_type)
+
         elbo_history = []
         for i in range(cfg.num_steps):
             key, elbo_key = jrandom.split(rng_key)
@@ -375,6 +381,10 @@ class FlowsEngine(InferenceEngine):
             )
             self._flow.all_params = optax.apply_updates(self._flow.all_params, updates)
             elbo_history.append(-float(loss))
+            if i > 0 and i % 500 == 0:
+                logger.debug("Flows step %d/%d, ELBO=%.4f", i, cfg.num_steps, elbo_history[-1])
+
+        logger.info("Flows finished: final ELBO=%.4f", elbo_history[-1] if elbo_history else float("nan"))
 
         # Генерируем постериорные сэмплы
         sample_key, _ = jrandom.split(rng_key)

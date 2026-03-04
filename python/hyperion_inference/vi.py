@@ -6,6 +6,7 @@ Reparameterization trick — семплим eps~N(0,1), потом z = mu + sigm
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 from typing import Any, Literal, Optional
 
@@ -15,6 +16,8 @@ import jax.random as jrandom
 import optax
 
 from hyperion_inference.base import InferenceEngine, InferenceState, InferenceResult
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -341,10 +344,17 @@ class VIEngine(InferenceEngine):
     ) -> InferenceResult:
         state = self.initialize(backend, rng_key, config)
         num_steps = config.get("num_steps", 5000)
+        logger.info("VI started: %d steps, covariance=%s, lr=%s",
+                     num_steps, config.get("covariance_type", "diagonal"),
+                     config.get("learning_rate", 0.01))
 
-        for _ in range(num_steps):
+        for i in range(num_steps):
             state = self.step(state)
+            if i > 0 and i % 500 == 0:
+                logger.debug("VI step %d/%d, ELBO=%.4f", i, num_steps,
+                             float(state.metrics.get("elbo", float("nan"))))
             if state.converged:
+                logger.info("VI converged at step %d", i)
                 break
 
         num_posterior = config.get("num_posterior_samples", 1000)
