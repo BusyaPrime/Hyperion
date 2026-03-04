@@ -261,6 +261,7 @@ class FlowsEngine(InferenceEngine):
     ) -> InferenceState:
         self._backend = backend
         cfg = FlowsConfig(**{k: v for k, v in config.items() if hasattr(FlowsConfig, k)})
+        self._cfg = cfg
 
         dim = backend.total_dim
         flow_key, rng_key = jrandom.split(rng_key)
@@ -312,7 +313,7 @@ class FlowsEngine(InferenceEngine):
         key, elbo_key = jrandom.split(state.rng_key)
 
         def neg_elbo(params):
-            return -self._compute_elbo(elbo_key, params, 20)
+            return -self._compute_elbo(elbo_key, params, self._cfg.num_elbo_samples)
 
         loss, grads = jax.value_and_grad(neg_elbo)(self._flow.all_params)
         updates, new_opt_state = self._optimizer.update(
@@ -326,7 +327,8 @@ class FlowsEngine(InferenceEngine):
     def get_samples(self, state: InferenceState) -> dict[str, jnp.ndarray]:
         dim = self._flow.dim
         key, _ = jrandom.split(state.rng_key)
-        eps = jrandom.normal(key, shape=(1000, dim))
+        n_samples = self._cfg.num_posterior_samples if self._cfg else 1000
+        eps = jrandom.normal(key, shape=(n_samples, dim))
         z_samples, _ = self._flow.forward(eps, self._flow.all_params)
 
         latent_names = list(self._backend.get_latent_shapes().keys())
