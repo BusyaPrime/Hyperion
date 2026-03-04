@@ -7,9 +7,30 @@ dist/
 build/
 .eggs/
 *.egg
+*.pyo
+*.pyd
 .mypy_cache/
 .ruff_cache/
 .pytest_cache/
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Coverage
+.coverage
+coverage.xml
+htmlcov/
+*.cover
+
+# Logs
+*.log
+logs/
+
+# Notebooks
+.ipynb_checkpoints/
 
 # Java
 .gradle/
@@ -17,20 +38,29 @@ build/
 !gradle/wrapper/gradle-wrapper.jar
 .idea/
 *.iml
+*.class
 
 # IDE
 .vscode/
 .cursor/
+*.swp
+*.swo
+*~
+.project
+.settings/
 
 # OS
 .DS_Store
 Thumbs.db
+Desktop.ini
 
 # Data & experiments
 experiments/
 *.npz
 *.parquet
 *.zarr/
+*.h5
+*.hdf5
 
 # Proto generated
 *_pb2.py
@@ -43,3 +73,9 @@ experiments/
 # Env
 .env
 *.env
+.env.local
+
+# Misc
+*.bak
+*.tmp
+*.orig
