@@ -328,6 +328,23 @@ table = summary_table(samples, samples_by_chain=by_chain)
 
 ---
 
+## Бенчмарки
+
+```bash
+python benchmarks/bench_inference.py
+```
+
+Normal-Normal модель, 1000 сэмплов + 500 warmup, JAX 0.9 CPU:
+
+| Engine | Dim=1 | Dim=5 | Dim=10 | Dim=20 |
+|--------|-------|-------|--------|--------|
+| **HMC** | 669 s/s | 640 s/s | 496 s/s | 336 s/s |
+| **NUTS** | 523 s/s | 466 s/s | 385 s/s | 319 s/s |
+
+На GPU цифры масштабируются линейно благодаря XLA-компиляции.
+
+---
+
 ## Тестирование
 
 ```bash
