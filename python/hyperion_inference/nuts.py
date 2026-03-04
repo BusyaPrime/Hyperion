@@ -15,7 +15,7 @@ JIT-совместимость:
 
 from __future__ import annotations
 
-import warnings
+import logging
 from typing import Any, Callable, NamedTuple, Optional
 
 import jax
@@ -23,6 +23,8 @@ import jax.numpy as jnp
 import jax.random as jrandom
 
 from hyperion_inference.base import InferenceEngine, InferenceResult
+
+logger = logging.getLogger(__name__)
 from hyperion_inference.warmup import (
     WarmupState,
     make_warmup_state,
@@ -328,11 +330,9 @@ def nuts_sample(
                 init_inv_mass, init_mass_chol,
             ))
         except Exception as e:
-            warnings.warn(
-                f"find_reasonable_step_size failed ({type(e).__name__}: {e}), "
-                f"using default step_size={step_size}",
-                RuntimeWarning,
-                stacklevel=2,
+            logger.warning(
+                "find_reasonable_step_size failed (%s: %s), using default step_size=%s",
+                type(e).__name__, e, step_size,
             )
 
     nuts_state = NUTSState(init_position, init_lp, init_grad)
@@ -456,11 +456,10 @@ def nuts_sample(
         n_max = int(num_max_depth)
         frac_max = n_max / max(num_samples, 1)
         if frac_max > 0.05:
-            warnings.warn(
-                f"NUTS: {n_max}/{num_samples} transitions "
-                f"({frac_max:.0%}) hit max_tree_depth={max_tree_depth}. "
-                f"Consider increasing max_tree_depth or tuning step_size.",
-                stacklevel=2,
+            logger.warning(
+                "NUTS: %d/%d transitions (%.0f%%) hit max_tree_depth=%d. "
+                "Consider increasing max_tree_depth or tuning step_size.",
+                n_max, num_samples, frac_max * 100, max_tree_depth,
             )
     except (jax.errors.ConcretizationTypeError, TypeError):
         pass

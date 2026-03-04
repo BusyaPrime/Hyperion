@@ -14,7 +14,7 @@ Dual averaging для step_size, Welford для mass matrix.
 
 from __future__ import annotations
 
-import warnings
+import logging
 from typing import Any, Callable, NamedTuple, Optional
 
 import jax
@@ -22,6 +22,8 @@ import jax.numpy as jnp
 import jax.random as jrandom
 
 from hyperion_inference.base import InferenceEngine, InferenceResult
+
+logger = logging.getLogger(__name__)
 from hyperion_inference.warmup import (
     WarmupState,
     make_warmup_state,
@@ -160,11 +162,9 @@ def hmc_sample(
                 init_inv_mass, init_mass_chol,
             ))
         except Exception as e:
-            warnings.warn(
-                f"find_reasonable_step_size failed ({type(e).__name__}: {e}), "
-                f"using default step_size={step_size}",
-                RuntimeWarning,
-                stacklevel=2,
+            logger.warning(
+                "find_reasonable_step_size failed (%s: %s), using default step_size=%s",
+                type(e).__name__, e, step_size,
             )
 
     hmc_state = HMCState(init_position, init_lp, init_grad)
