@@ -40,6 +40,13 @@ def _render_summary_table(summary_stats: dict[str, dict[str, float]]) -> list[st
     return lines
 
 
+def _render_convergence_metrics(metrics: dict[str, float]) -> list[str]:
+    lines = ["## Convergence Metrics"]
+    for key, value in metrics.items():
+        lines.append(f"- **{key}:** {_format_markdown_value(value)}")
+    return lines
+
+
 @dataclass
 class DiagnosticsReport:
     """Структурированный отчёт: модель, метод, конфиг, summary, convergence, варнинги, выводы."""
@@ -83,9 +90,7 @@ class DiagnosticsReport:
         lines.extend(_render_summary_table(self.summary_stats))
 
         lines.append("")
-        lines.append("## Convergence Metrics")
-        for k, v in self.convergence_metrics.items():
-            lines.append(f"- **{k}:** {_format_markdown_value(v)}")
+        lines.extend(_render_convergence_metrics(self.convergence_metrics))
 
         if self.warnings:
             lines.append("")
