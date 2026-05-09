@@ -121,3 +121,20 @@ def test_generate_report_includes_multichain_vector_parameters() -> None:
     assert "beta[1]" in report.summary_stats
     assert "beta[0]/r_hat" in report.convergence_metrics
     assert "beta[1]/split_r_hat" in report.convergence_metrics
+
+
+def test_diagnostics_report_markdown_renders_warnings_and_conclusions() -> None:
+    report = DiagnosticsReport(
+        model_name="warning_model",
+        inference_method="vi",
+        timestamp="2026-05-09T10:00:00",
+        warnings=["Low ESS for z/ess: 30.0 (recommended > 100)"],
+        conclusions=["Review warnings before trusting results."],
+    )
+
+    markdown = report.to_markdown()
+
+    assert "## Warnings" in markdown
+    assert "Low ESS for z/ess" in markdown
+    assert "## Conclusions" in markdown
+    assert "- Review warnings before trusting results." in markdown
