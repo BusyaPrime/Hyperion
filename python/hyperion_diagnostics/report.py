@@ -14,6 +14,12 @@ from typing import Any, Optional
 import numpy as np
 
 
+def _format_markdown_value(value: Any) -> str:
+    if isinstance(value, float):
+        return f"{value:.4f}"
+    return str(value)
+
+
 @dataclass
 class DiagnosticsReport:
     """Структурированный отчёт: модель, метод, конфиг, summary, convergence, варнинги, выводы."""
@@ -66,20 +72,13 @@ class DiagnosticsReport:
                     headers = list(stats.keys())
                     lines.append("| Parameter | " + " | ".join(headers) + " |")
                     lines.append("|" + "|".join(["---"] * (len(headers) + 1)) + "|")
-                vals = " | ".join(
-                    f"{stats.get(h, 'N/A'):.4f}" if isinstance(stats.get(h), float)
-                    else str(stats.get(h, 'N/A'))
-                    for h in headers
-                )
+                vals = " | ".join(_format_markdown_value(stats.get(h, "N/A")) for h in headers)
                 lines.append(f"| {param} | {vals} |")
 
         lines.append("")
         lines.append("## Convergence Metrics")
         for k, v in self.convergence_metrics.items():
-            if isinstance(v, float):
-                lines.append(f"- **{k}:** {v:.4f}")
-            else:
-                lines.append(f"- **{k}:** {v}")
+            lines.append(f"- **{k}:** {_format_markdown_value(v)}")
 
         if self.warnings:
             lines.append("")
