@@ -20,6 +20,13 @@ def _format_markdown_value(value: Any) -> str:
     return str(value)
 
 
+def _render_configuration(config: dict[str, Any]) -> list[str]:
+    lines = ["## Configuration"]
+    for key, value in config.items():
+        lines.append(f"- **{key}:** {value}")
+    return lines
+
+
 @dataclass
 class DiagnosticsReport:
     """Структурированный отчёт: модель, метод, конфиг, summary, convergence, варнинги, выводы."""
@@ -56,10 +63,8 @@ class DiagnosticsReport:
             f"**Method:** {self.inference_method}",
             f"**Timestamp:** {self.timestamp}",
             "",
-            "## Configuration",
+            *_render_configuration(self.config),
         ]
-        for k, v in self.config.items():
-            lines.append(f"- **{k}:** {v}")
 
         lines.append("")
         lines.append("## Parameter Summary")
