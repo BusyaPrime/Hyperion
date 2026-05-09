@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import json
+from types import SimpleNamespace
 
 import numpy as np
 
 from hyperion_diagnostics.report import DiagnosticsReport
 from hyperion_diagnostics.report import generate_report
-from hyperion_inference.base import InferenceResult
 
 
 def test_diagnostics_report_json_serializes_core_fields() -> None:
@@ -55,7 +55,7 @@ def test_diagnostics_report_markdown_renders_configuration_and_summary_table() -
 
 
 def test_generate_report_adds_clean_conclusion_when_diagnostics_pass() -> None:
-    result = InferenceResult(
+    result = SimpleNamespace(
         samples={"mu": np.linspace(-1.0, 1.0, 200)},
         diagnostics={"accept_rate": 0.75, "num_divergences": 0},
     )
@@ -74,7 +74,7 @@ def test_generate_report_adds_clean_conclusion_when_diagnostics_pass() -> None:
 
 
 def test_generate_report_warns_on_low_effective_sample_size() -> None:
-    result = InferenceResult(
+    result = SimpleNamespace(
         samples={"mu": np.ones(150)},
         diagnostics={"accept_rate": 0.8, "num_divergences": 0},
     )
@@ -89,7 +89,7 @@ def test_generate_report_warns_on_low_effective_sample_size() -> None:
 
 def test_generate_report_warns_on_sampler_diagnostics() -> None:
     rng = np.random.default_rng(7)
-    result = InferenceResult(
+    result = SimpleNamespace(
         samples={"mu": rng.normal(size=500)},
         diagnostics={
             "accept_rate": 0.4,
@@ -108,7 +108,7 @@ def test_generate_report_warns_on_sampler_diagnostics() -> None:
 def test_generate_report_includes_multichain_vector_parameters() -> None:
     rng = np.random.default_rng(11)
     chains = rng.normal(size=(3, 120, 2))
-    result = InferenceResult(
+    result = SimpleNamespace(
         samples={"beta": chains.reshape(-1, 2)},
         diagnostics={"accept_rate": 0.9, "num_divergences": 0},
         num_chains=3,
