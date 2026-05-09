@@ -103,3 +103,21 @@ def test_generate_report_warns_on_sampler_diagnostics() -> None:
     assert any("Low acceptance rate" in warning for warning in report.warnings)
     assert any("divergent transitions" in warning for warning in report.warnings)
     assert any("Low BFMI" in warning for warning in report.warnings)
+
+
+def test_generate_report_includes_multichain_vector_parameters() -> None:
+    rng = np.random.default_rng(11)
+    chains = rng.normal(size=(3, 120, 2))
+    result = InferenceResult(
+        samples={"beta": chains.reshape(-1, 2)},
+        diagnostics={"accept_rate": 0.9, "num_divergences": 0},
+        num_chains=3,
+        samples_by_chain={"beta": chains},
+    )
+
+    report = generate_report(result, model_name="linear_model", inference_method="hmc")
+
+    assert "beta[0]" in report.summary_stats
+    assert "beta[1]" in report.summary_stats
+    assert "beta[0]/r_hat" in report.convergence_metrics
+    assert "beta[1]/split_r_hat" in report.convergence_metrics
