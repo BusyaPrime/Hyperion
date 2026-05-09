@@ -71,3 +71,17 @@ def test_generate_report_adds_clean_conclusion_when_diagnostics_pass() -> None:
     assert report.warnings == []
     assert report.conclusions == ["No convergence issues detected. Results appear reliable."]
     assert "mu" in report.summary_stats
+
+
+def test_generate_report_warns_on_low_effective_sample_size() -> None:
+    result = InferenceResult(
+        samples={"mu": np.ones(150)},
+        diagnostics={"accept_rate": 0.8, "num_divergences": 0},
+    )
+
+    report = generate_report(result, model_name="sticky_model", inference_method="hmc")
+
+    assert any("Low ESS for mu/ess" in warning for warning in report.warnings)
+    assert report.conclusions == [
+        "1 potential issue(s) detected. Review warnings before trusting results."
+    ]
