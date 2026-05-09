@@ -381,3 +381,11 @@ python -m pytest tests/test_integration/test_mcmc_multichain.py -v
 ## Лицензия
 
 MIT
+
+## Developer docs
+
+- `docs/development/architecture_overview.md` — module boundaries and ownership.
+- `docs/development/data_flow.md` — model-to-diagnostics execution path.
+- `docs/development/debugging.md` — focused debugging paths by layer.
+- `docs/development/release_checklist.md` — release validation checklist.
+- `docs/development/contribution_workflow.md` — branch, commit, and PR workflow.
