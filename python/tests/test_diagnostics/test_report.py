@@ -55,8 +55,9 @@ def test_diagnostics_report_markdown_renders_configuration_and_summary_table() -
 
 
 def test_generate_report_adds_clean_conclusion_when_diagnostics_pass() -> None:
+    rng = np.random.default_rng(5)
     result = SimpleNamespace(
-        samples={"mu": np.linspace(-1.0, 1.0, 200)},
+        samples={"mu": rng.normal(size=500)},
         diagnostics={"accept_rate": 0.75, "num_divergences": 0},
     )
 
@@ -64,7 +65,7 @@ def test_generate_report_adds_clean_conclusion_when_diagnostics_pass() -> None:
         result,
         model_name="normal_model",
         inference_method="hmc",
-        config={"num_samples": 200},
+        config={"num_samples": 500},
     )
 
     assert report.model_name == "normal_model"
