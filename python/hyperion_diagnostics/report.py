@@ -27,6 +27,19 @@ def _render_configuration(config: dict[str, Any]) -> list[str]:
     return lines
 
 
+def _render_summary_table(summary_stats: dict[str, dict[str, float]]) -> list[str]:
+    lines = ["## Parameter Summary", ""]
+    headers = None
+    for param, stats in summary_stats.items():
+        if headers is None:
+            headers = list(stats.keys())
+            lines.append("| Parameter | " + " | ".join(headers) + " |")
+            lines.append("|" + "|".join(["---"] * (len(headers) + 1)) + "|")
+        vals = " | ".join(_format_markdown_value(stats.get(h, "N/A")) for h in headers)
+        lines.append(f"| {param} | {vals} |")
+    return lines
+
+
 @dataclass
 class DiagnosticsReport:
     """Структурированный отчёт: модель, метод, конфиг, summary, convergence, варнинги, выводы."""
@@ -67,18 +80,7 @@ class DiagnosticsReport:
         ]
 
         lines.append("")
-        lines.append("## Parameter Summary")
-        lines.append("")
-
-        if self.summary_stats:
-            headers = None
-            for param, stats in self.summary_stats.items():
-                if headers is None:
-                    headers = list(stats.keys())
-                    lines.append("| Parameter | " + " | ".join(headers) + " |")
-                    lines.append("|" + "|".join(["---"] * (len(headers) + 1)) + "|")
-                vals = " | ".join(_format_markdown_value(stats.get(h, "N/A")) for h in headers)
-                lines.append(f"| {param} | {vals} |")
+        lines.extend(_render_summary_table(self.summary_stats))
 
         lines.append("")
         lines.append("## Convergence Metrics")
