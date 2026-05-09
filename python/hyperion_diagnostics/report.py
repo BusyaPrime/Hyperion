@@ -47,6 +47,15 @@ def _render_convergence_metrics(metrics: dict[str, float]) -> list[str]:
     return lines
 
 
+def _render_bullet_section(title: str, items: list[str], *, prefix: str = "") -> list[str]:
+    if not items:
+        return []
+    lines = ["", f"## {title}"]
+    for item in items:
+        lines.append(f"- {prefix}{item}")
+    return lines
+
+
 @dataclass
 class DiagnosticsReport:
     """Структурированный отчёт: модель, метод, конфиг, summary, convergence, варнинги, выводы."""
@@ -92,17 +101,8 @@ class DiagnosticsReport:
         lines.append("")
         lines.extend(_render_convergence_metrics(self.convergence_metrics))
 
-        if self.warnings:
-            lines.append("")
-            lines.append("## Warnings")
-            for w in self.warnings:
-                lines.append(f"- ⚠ {w}")
-
-        if self.conclusions:
-            lines.append("")
-            lines.append("## Conclusions")
-            for c in self.conclusions:
-                lines.append(f"- {c}")
+        lines.extend(_render_bullet_section("Warnings", self.warnings, prefix="⚠ "))
+        lines.extend(_render_bullet_section("Conclusions", self.conclusions))
 
         return "\n".join(lines)
 
