@@ -1,13 +1,13 @@
 ## Summary
 
-- 
-- 
+-
+-
 
 ## Changes
 
-- 
-- 
-- 
+-
+-
+-
 
 ## Validation
 
