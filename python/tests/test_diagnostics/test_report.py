@@ -85,3 +85,21 @@ def test_generate_report_warns_on_low_effective_sample_size() -> None:
     assert report.conclusions == [
         "1 potential issue(s) detected. Review warnings before trusting results."
     ]
+
+
+def test_generate_report_warns_on_sampler_diagnostics() -> None:
+    rng = np.random.default_rng(7)
+    result = InferenceResult(
+        samples={"mu": rng.normal(size=500)},
+        diagnostics={
+            "accept_rate": 0.4,
+            "num_divergences": 2,
+            "energy": np.cumsum(rng.normal(0.0, 0.01, size=500)),
+        },
+    )
+
+    report = generate_report(result, model_name="difficult_model", inference_method="nuts")
+
+    assert any("Low acceptance rate" in warning for warning in report.warnings)
+    assert any("divergent transitions" in warning for warning in report.warnings)
+    assert any("Low BFMI" in warning for warning in report.warnings)
