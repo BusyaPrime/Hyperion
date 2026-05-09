@@ -21,3 +21,30 @@ def test_diagnostics_report_json_serializes_core_fields() -> None:
     assert payload["inference_method"] == "hmc"
     assert payload["config"]["num_samples"] == 100
     assert payload["summary_stats"]["mu"]["mean"] == 0.1
+
+
+def test_diagnostics_report_markdown_renders_configuration_and_summary_table() -> None:
+    report = DiagnosticsReport(
+        model_name="coin_model",
+        inference_method="nuts",
+        timestamp="2026-05-09T10:00:00",
+        config={"num_warmup": 50, "num_samples": 100},
+        summary_stats={
+            "mu": {
+                "mean": 2.0,
+                "std": 0.5,
+                "median": 2.1,
+                "ci_5.0%": 1.2,
+                "ci_95.0%": 2.8,
+                "ess": 88.0,
+            }
+        },
+        convergence_metrics={"mu/ess": 88.0},
+    )
+
+    markdown = report.to_markdown()
+
+    assert "# Diagnostics Report: coin_model" in markdown
+    assert "- **num_warmup:** 50" in markdown
+    assert "| Parameter | mean | std | median | ci_5.0% | ci_95.0% | ess |" in markdown
+    assert "| mu | 2.0000 | 0.5000 | 2.1000 | 1.2000 | 2.8000 | 88.0000 |" in markdown
