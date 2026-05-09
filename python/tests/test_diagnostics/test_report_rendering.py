@@ -34,3 +34,19 @@ def test_report_markdown_omits_empty_optional_sections() -> None:
 
     assert "## Warnings" not in markdown
     assert "## Conclusions" not in markdown
+
+
+def test_report_markdown_formats_numeric_and_text_values() -> None:
+    report = DiagnosticsReport(
+        model_name="format_model",
+        inference_method="smc",
+        timestamp="2026-05-09T10:00:00",
+        summary_stats={"theta": {"mean": 1.23456, "status": "ok"}},
+        convergence_metrics={"particles": 256, "ess": 101.12345},
+    )
+
+    markdown = report.to_markdown()
+
+    assert "| theta | 1.2346 | ok |" in markdown
+    assert "- **particles:** 256" in markdown
+    assert "- **ess:** 101.1235" in markdown
