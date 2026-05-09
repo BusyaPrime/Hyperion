@@ -2,7 +2,11 @@ from __future__ import annotations
 
 import json
 
+import numpy as np
+
 from hyperion_diagnostics.report import DiagnosticsReport
+from hyperion_diagnostics.report import generate_report
+from hyperion_inference.base import InferenceResult
 
 
 def test_diagnostics_report_json_serializes_core_fields() -> None:
@@ -48,3 +52,22 @@ def test_diagnostics_report_markdown_renders_configuration_and_summary_table() -
     assert "- **num_warmup:** 50" in markdown
     assert "| Parameter | mean | std | median | ci_5.0% | ci_95.0% | ess |" in markdown
     assert "| mu | 2.0000 | 0.5000 | 2.1000 | 1.2000 | 2.8000 | 88.0000 |" in markdown
+
+
+def test_generate_report_adds_clean_conclusion_when_diagnostics_pass() -> None:
+    result = InferenceResult(
+        samples={"mu": np.linspace(-1.0, 1.0, 200)},
+        diagnostics={"accept_rate": 0.75, "num_divergences": 0},
+    )
+
+    report = generate_report(
+        result,
+        model_name="normal_model",
+        inference_method="hmc",
+        config={"num_samples": 200},
+    )
+
+    assert report.model_name == "normal_model"
+    assert report.warnings == []
+    assert report.conclusions == ["No convergence issues detected. Results appear reliable."]
+    assert "mu" in report.summary_stats
