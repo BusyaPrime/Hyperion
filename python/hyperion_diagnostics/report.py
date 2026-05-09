@@ -14,6 +14,48 @@ from typing import Any, Optional
 import numpy as np
 
 
+def _format_markdown_value(value: Any) -> str:
+    if isinstance(value, float):
+        return f"{value:.4f}"
+    return str(value)
+
+
+def _render_configuration(config: dict[str, Any]) -> list[str]:
+    lines = ["## Configuration"]
+    for key, value in config.items():
+        lines.append(f"- **{key}:** {value}")
+    return lines
+
+
+def _render_summary_table(summary_stats: dict[str, dict[str, float]]) -> list[str]:
+    lines = ["## Parameter Summary", ""]
+    headers = None
+    for param, stats in summary_stats.items():
+        if headers is None:
+            headers = list(stats.keys())
+            lines.append("| Parameter | " + " | ".join(headers) + " |")
+            lines.append("|" + "|".join(["---"] * (len(headers) + 1)) + "|")
+        vals = " | ".join(_format_markdown_value(stats.get(h, "N/A")) for h in headers)
+        lines.append(f"| {param} | {vals} |")
+    return lines
+
+
+def _render_convergence_metrics(metrics: dict[str, float]) -> list[str]:
+    lines = ["## Convergence Metrics"]
+    for key, value in metrics.items():
+        lines.append(f"- **{key}:** {_format_markdown_value(value)}")
+    return lines
+
+
+def _render_bullet_section(title: str, items: list[str], *, prefix: str = "") -> list[str]:
+    if not items:
+        return []
+    lines = ["", f"## {title}"]
+    for item in items:
+        lines.append(f"- {prefix}{item}")
+    return lines
+
+
 @dataclass
 class DiagnosticsReport:
     """Структурированный отчёт: модель, метод, конфиг, summary, convergence, варнинги, выводы."""
@@ -50,48 +92,17 @@ class DiagnosticsReport:
             f"**Method:** {self.inference_method}",
             f"**Timestamp:** {self.timestamp}",
             "",
-            "## Configuration",
+            *_render_configuration(self.config),
         ]
-        for k, v in self.config.items():
-            lines.append(f"- **{k}:** {v}")
 
         lines.append("")
-        lines.append("## Parameter Summary")
-        lines.append("")
-
-        if self.summary_stats:
-            headers = None
-            for param, stats in self.summary_stats.items():
-                if headers is None:
-                    headers = list(stats.keys())
-                    lines.append("| Parameter | " + " | ".join(headers) + " |")
-                    lines.append("|" + "|".join(["---"] * (len(headers) + 1)) + "|")
-                vals = " | ".join(
-                    f"{stats.get(h, 'N/A'):.4f}" if isinstance(stats.get(h), float)
-                    else str(stats.get(h, 'N/A'))
-                    for h in headers
-                )
-                lines.append(f"| {param} | {vals} |")
+        lines.extend(_render_summary_table(self.summary_stats))
 
         lines.append("")
-        lines.append("## Convergence Metrics")
-        for k, v in self.convergence_metrics.items():
-            if isinstance(v, float):
-                lines.append(f"- **{k}:** {v:.4f}")
-            else:
-                lines.append(f"- **{k}:** {v}")
+        lines.extend(_render_convergence_metrics(self.convergence_metrics))
 
-        if self.warnings:
-            lines.append("")
-            lines.append("## Warnings")
-            for w in self.warnings:
-                lines.append(f"- ⚠ {w}")
-
-        if self.conclusions:
-            lines.append("")
-            lines.append("## Conclusions")
-            for c in self.conclusions:
-                lines.append(f"- {c}")
+        lines.extend(_render_bullet_section("Warnings", self.warnings, prefix="⚠ "))
+        lines.extend(_render_bullet_section("Conclusions", self.conclusions))
 
         return "\n".join(lines)
 
